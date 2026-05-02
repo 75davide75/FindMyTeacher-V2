@@ -84,12 +84,16 @@ export async function parseSchedulePdfInBrowser(file: File): Promise<ScheduleDat
 
     const rows = groupRows(allItems)
     const columnStarts = detectColumnStarts(rows)
-    if (columnStarts.length < dayOrder.length) {
+    const classLayoutLessons = extractClassLessons(rows, columnStarts.length === dayOrder.length ? columnStarts : fallbackColumnStarts)
+    const globalTeacherLessons = extractGlobalTeacherLessons(rows)
+    const useGlobalTeacherLayout = globalTeacherLessons.length > classLayoutLessons.length
+    const rawLessons = useGlobalTeacherLayout ? globalTeacherLessons : classLayoutLessons
+
+    if (!useGlobalTeacherLayout && columnStarts.length < dayOrder.length) {
       warnings.push('Colonne non riconosciute automaticamente: usato il layout standard del PDF.')
     }
 
     const startsFrom = detectStartDate(rows)
-    const rawLessons = extractLessons(rows, columnStarts.length === dayOrder.length ? columnStarts : fallbackColumnStarts)
     const periods = buildPeriods(rawLessons.map((lesson) => lesson.startTime))
     const lessons = rawLessons.map((lesson) => ({
       ...lesson,
@@ -171,7 +175,7 @@ function detectStartDate(rows: TextRow[]): string | undefined {
   return `${year}-${month}-${day}`
 }
 
-function extractLessons(rows: TextRow[], columnStarts: number[]): Lesson[] {
+function extractClassLessons(rows: TextRow[], columnStarts: number[]): Lesson[] {
   const lessons: Lesson[] = []
   let currentClass = ''
 
@@ -212,6 +216,72 @@ function extractLessons(rows: TextRow[], columnStarts: number[]): Lesson[] {
   }
 
   return lessons
+}
+
+function extractGlobalTeacherLessons(rows: TextRow[]): Lesson[] {
+  const columnStarts = detectGlobalColumnStarts(rows)
+  if (columnStarts.length < 12) return []
+
+  const lessons: Lesson[] = []
+  const teacherBoundary = Math.min(...columnStarts) - 15
+
+  for (const row of rows) {
+    const teacherItems = row.items.filter((item) => item.x < teacherBoundary)
+    const teacher = normalizeTeacherName(teacherItems.map((item) => item.str).join(' '))
+    if (!teacher || teacher === 'DOCENTE') continue
+
+    for (const item of row.items) {
+      if (item.x < teacherBoundary || !isClassName(item.str)) continue
+
+      const columnIndex = nearestColumnIndex(item.x, columnStarts)
+      if (columnIndex < 0) continue
+
+      const day = dayOrder[Math.floor(columnIndex / 6)]
+      if (!day) continue
+
+      const period = (columnIndex % 6) + 1
+      const startTime = periodToStartTime(period)
+      lessons.push({
+        id: '',
+        className: normalizeClassName(item.str),
+        teacher,
+        day,
+        dayLabel: dayLabels[day],
+        period,
+        startTime,
+        endTime: addMinutes(startTime, 60),
+        sourcePage: row.page,
+      })
+    }
+  }
+
+  return lessons
+}
+
+function detectGlobalColumnStarts(rows: TextRow[]): number[] {
+  const dayHeaderRow = rows.find((row) => {
+    const dayTokenCount = row.items.filter((item) => item.x > 300 && isShortDayToken(item.str)).length
+    return row.items.some((item) => item.str.toLowerCase() === 'docente') && dayTokenCount >= 12
+  })
+
+  if (dayHeaderRow) {
+    return dayHeaderRow.items
+      .filter((item) => item.x > 300 && isShortDayToken(item.str))
+      .map((item) => item.x)
+      .sort((a, b) => a - b)
+  }
+
+  const periodHeaderRow = rows.find((row) => row.items.filter((item) => item.x > 300 && /^[1-6]$/.test(item.str)).length >= 12)
+  if (!periodHeaderRow) return []
+
+  return periodHeaderRow.items
+    .filter((item) => item.x > 300 && /^[1-6]$/.test(item.str))
+    .map((item) => item.x)
+    .sort((a, b) => a - b)
+}
+
+function isShortDayToken(value: string): boolean {
+  return /^(lun|mar|mer|gio|ven)$/i.test(value.trim())
 }
 
 function nearestColumnIndex(x: number, columnStarts: number[]): number {
@@ -261,6 +331,10 @@ function addMinutes(time: string, amount: number): string {
   const hours = Math.floor(total / 60)
   const minutes = total % 60
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function periodToStartTime(period: number): string {
+  return `${String(period + 7).padStart(2, '0')}:00`
 }
 
 function minutesFromMidnight(time: string): number {
