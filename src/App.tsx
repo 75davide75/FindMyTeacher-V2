@@ -13,6 +13,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { dayOrder, type DayId, type Lesson, type ScheduleData } from './types'
 
+const scheduleStorageKey = 'findmyteacher.schedule'
+
 function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [schedule, setSchedule] = useState<ScheduleData | null>(null)
@@ -38,6 +40,9 @@ function App() {
   }
 
   async function loadSchedule(): Promise<{ schedule: ScheduleData | null; apiAvailable: boolean }> {
+    const storedSchedule = readStoredSchedule()
+    if (storedSchedule) return { schedule: storedSchedule, apiAvailable: false }
+
     try {
       const response = await fetch('/api/schedule')
       if (!response.ok) throw new Error('API locale non disponibile.')
@@ -118,29 +123,37 @@ function App() {
   async function handleFile(file: File | undefined) {
     if (!file) return
 
-    if (!apiAvailable) {
-      setError('Nella versione online il PDF non puo essere importato: usa la versione locale per rigenerare il database.')
-      return
-    }
-
     setImporting(true)
     setError('')
 
     try {
-      const body = new FormData()
-      body.append('file', file)
+      if (apiAvailable) {
+        try {
+          const body = new FormData()
+          body.append('file', file)
 
-      const response = await fetch('/api/import/pdf', {
-        method: 'POST',
-        body,
-      })
-      const payload = (await response.json()) as { schedule?: ScheduleData; error?: string }
+          const response = await fetch('/api/import/pdf', {
+            method: 'POST',
+            body,
+          })
+          const payload = (await response.json()) as { schedule?: ScheduleData; error?: string }
 
-      if (!response.ok || !payload.schedule) {
-        throw new Error(payload.error ?? 'Import non riuscito.')
+          if (!response.ok || !payload.schedule) {
+            throw new Error(payload.error ?? 'Import non riuscito.')
+          }
+
+          clearStoredSchedule()
+          applySchedule(payload.schedule)
+          return
+        } catch {
+          setApiAvailable(false)
+        }
       }
 
-      applySchedule(payload.schedule)
+      const { parseSchedulePdfInBrowser } = await import('./browserPdfImport')
+      const browserSchedule = await parseSchedulePdfInBrowser(file)
+      storeSchedule(browserSchedule)
+      applySchedule(browserSchedule)
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Import non riuscito.')
     } finally {
@@ -470,6 +483,31 @@ function weekendText(day: DayId | null, time: string): string {
   if (minutes < 8 * 60) return 'Le lezioni non sono ancora iniziate.'
   if (minutes >= 14 * 60) return 'Le lezioni sono terminate.'
   return 'Nessun docente in questa fascia.'
+}
+
+function readStoredSchedule(): ScheduleData | null {
+  try {
+    const value = localStorage.getItem(scheduleStorageKey)
+    return value ? (JSON.parse(value) as ScheduleData) : null
+  } catch {
+    return null
+  }
+}
+
+function storeSchedule(schedule: ScheduleData) {
+  try {
+    localStorage.setItem(scheduleStorageKey, JSON.stringify(schedule))
+  } catch {
+    // L'orario resta caricato anche se il browser blocca il salvataggio locale.
+  }
+}
+
+function clearStoredSchedule() {
+  try {
+    localStorage.removeItem(scheduleStorageKey)
+  } catch {
+    // Nessun intervento necessario: il salvataggio e' solo una comodita.
+  }
 }
 
 export default App

@@ -1,6 +1,6 @@
-# Orario Classi
+# FindMyTeacher V2
 
-Web app locale per consultare rapidamente l'orario di classi e docenti a partire da un PDF.
+Web app per consultare rapidamente l'orario di classi e docenti a partire da un PDF.
 
 ## Comandi
 
@@ -27,6 +27,7 @@ Controllano build TypeScript/Vite e lint.
 
 - `server/pdfScheduleParser.ts` legge il PDF con le coordinate del testo e produce lezioni normalizzate.
 - `server/index.ts` espone import PDF e lettura orario.
+- `src/browserPdfImport.ts` permette di importare un PDF direttamente dal browser nella versione GitHub Pages.
 - `src/App.tsx` mostra ricerca per classe/docente, ora corrente/prossima ora e giornata intera.
 
-Il database e' locale: non viene inviato a servizi esterni.
+Nella versione pubblica il PDF importato viene letto nel browser e salvato nel `localStorage` del dispositivo. Il file non viene inviato a server esterni.
