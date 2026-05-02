@@ -230,11 +230,11 @@ function nearestColumnIndex(x: number, columnStarts: number[]): number {
 }
 
 function isClassName(value: string): boolean {
-  return /^\d{1,2}[A-Z]{1,3}$/.test(value.trim())
+  return /^\d{1,2}\s*[A-Z](?:[\s-]*[A-Z]){0,3}$/i.test(value.trim())
 }
 
 function normalizeClassName(value: string): string {
-  return value.trim().toUpperCase()
+  return value.replace(/[\s-]+/g, '').trim().toUpperCase()
 }
 
 function normalizeTeacherName(value: string): string {

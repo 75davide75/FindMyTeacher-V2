@@ -310,6 +310,49 @@ input[type='time'] {
   background: transparent;
 }
 
+.teacher-picker {
+  position: relative;
+}
+
+.teacher-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px;
+  background: var(--panel-strong);
+  box-shadow: 0 18px 42px rgba(29, 35, 46, 0.18);
+}
+
+.teacher-menu button,
+.teacher-menu span {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.teacher-menu button:hover,
+.teacher-menu button[aria-selected='true'] {
+  color: #ffffff;
+  background: var(--blue);
+}
+
+.teacher-menu span {
+  display: grid;
+  align-items: center;
+  color: var(--muted);
+}
+
 .toggle-row {
   display: inline-flex;
   min-height: 42px;

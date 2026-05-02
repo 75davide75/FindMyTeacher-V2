@@ -26,6 +26,7 @@ function App() {
   const [viewMode, setViewMode] = useState<'now' | 'day'>('now')
   const [selectedClass, setSelectedClass] = useState('')
   const [teacherQuery, setTeacherQuery] = useState('')
+  const [teacherMenuOpen, setTeacherMenuOpen] = useState(false)
   const [useLiveTime, setUseLiveTime] = useState(true)
   const [clock, setClock] = useState(() => new Date())
   const [manualDay, setManualDay] = useState<DayId>('monday')
@@ -88,6 +89,14 @@ function App() {
     () => (schedule ? resolveTeacher(schedule.teachers, teacherQuery) : undefined),
     [schedule, teacherQuery],
   )
+  const filteredTeachers = useMemo(() => {
+    if (!schedule) return []
+
+    const normalizedQuery = teacherQuery.trim().toLowerCase()
+    if (!normalizedQuery) return schedule.teachers
+
+    return schedule.teachers.filter((teacher) => teacher.toLowerCase().includes(normalizedQuery))
+  }, [schedule, teacherQuery])
 
   const targetLessons = useMemo(() => {
     if (!schedule) return []
@@ -258,20 +267,44 @@ function App() {
                   ))}
                 </select>
               ) : (
-                <div className="search-field">
-                  <Search size={17} />
-                  <input
-                    id="target"
-                    list="teacher-list"
-                    value={teacherQuery}
-                    onChange={(event) => setTeacherQuery(event.target.value)}
-                    placeholder="Es. CIPRIANI"
-                  />
-                  <datalist id="teacher-list">
-                    {schedule.teachers.map((teacher) => (
-                      <option key={teacher} value={teacher} />
-                    ))}
-                  </datalist>
+                <div className="teacher-picker">
+                  <div className="search-field">
+                    <Search size={17} />
+                    <input
+                      id="target"
+                      value={teacherQuery}
+                      onBlur={() => window.setTimeout(() => setTeacherMenuOpen(false), 120)}
+                      onChange={(event) => {
+                        setTeacherQuery(event.target.value)
+                        setTeacherMenuOpen(true)
+                      }}
+                      onFocus={() => setTeacherMenuOpen(true)}
+                      placeholder="Es. CIPRIANI"
+                    />
+                  </div>
+                  {teacherMenuOpen ? (
+                    <div className="teacher-menu" role="listbox">
+                      {filteredTeachers.length > 0 ? (
+                        filteredTeachers.map((teacher) => (
+                          <button
+                            key={teacher}
+                            type="button"
+                            role="option"
+                            aria-selected={teacher === selectedTeacher}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              setTeacherQuery(teacher)
+                              setTeacherMenuOpen(false)
+                            }}
+                          >
+                            {teacher}
+                          </button>
+                        ))
+                      ) : (
+                        <span>Nessun docente trovato</span>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
