@@ -220,10 +220,14 @@ p {
 }
 
 .control-panel {
+  position: relative;
+  z-index: 30;
   grid-template-columns: auto minmax(220px, 1fr) auto;
 }
 
 .time-panel {
+  position: relative;
+  z-index: 10;
   grid-template-columns: auto minmax(160px, 220px) minmax(140px, 180px);
 }
 
@@ -316,7 +320,7 @@ input[type='time'] {
 
 .teacher-menu {
   position: absolute;
-  z-index: 20;
+  z-index: 40;
   top: calc(100% + 6px);
   right: 0;
   left: 0;
