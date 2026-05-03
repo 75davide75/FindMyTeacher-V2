@@ -109,6 +109,16 @@ function App() {
     '--segments': 3,
     '--active-index': viewMode === 'now' ? 0 : viewMode === 'day' ? 1 : 2,
   } as CSSProperties
+  const schoolTimes = useMemo(() => {
+    if (!schedule) return []
+
+    const lastPeriod = schedule.periods.at(-1)
+    return lastPeriod ? [...schedule.periods.map((period) => period.startTime), lastPeriod.endTime] : []
+  }, [schedule])
+  const displayedTimeIndex = useMemo(
+    () => nearestTimeIndex(useLiveTime ? activeTime : manualTime, schoolTimes),
+    [activeTime, manualTime, schoolTimes, useLiveTime],
+  )
 
   const targetLessons = useMemo(() => {
     if (!schedule) return []
@@ -146,6 +156,14 @@ function App() {
     setUseLiveTime(false)
     setManualDay(day)
     setManualTime(time)
+  }
+
+  function jumpFromLessonBoundary(lesson: Lesson, boundary: 'start' | 'end') {
+    const lessonStartIndex = schoolTimes.indexOf(lesson.startTime)
+    const targetTime =
+      boundary === 'start' ? schoolTimes[Math.max(0, lessonStartIndex - 1)] ?? lesson.startTime : lesson.endTime
+
+    jumpToLessonTime(lesson.day, targetTime)
   }
 
   function openCounterpartWeek(lesson: Lesson) {
@@ -382,13 +400,18 @@ function App() {
               </div>
 
               <div className="field compact">
-                <label htmlFor="time">Ora</label>
-                <input
-                  id="time"
-                  type="time"
-                  value={activeTime}
+                <div className="field-heading">
+                  <label htmlFor="time">Ora</label>
+                  <span>{useLiveTime ? activeTime : manualTime}</span>
+                </div>
+                <SchoolTimeSlider
+                  times={schoolTimes}
+                  valueIndex={displayedTimeIndex}
                   disabled={viewMode === 'day' || useLiveTime}
-                  onChange={(event) => setManualTime(event.target.value)}
+                  onChange={(time) => {
+                    setUseLiveTime(false)
+                    setManualTime(time)
+                  }}
                 />
               </div>
             </section>
@@ -402,13 +425,13 @@ function App() {
                   lesson={currentLesson}
                   targetMode={targetMode}
                   fallback={weekendText(activeDay, activeTime)}
-                  onSelectTime={jumpToLessonTime}
+                  onSelectBoundary={jumpFromLessonBoundary}
                 />
                 <NextCard
                   lesson={nextLesson}
                   targetMode={targetMode}
                   onOpenWeek={() => setViewMode('week')}
-                  onSelectTime={jumpToLessonTime}
+                  onSelectBoundary={jumpFromLessonBoundary}
                 />
               </section>
             ) : viewMode === 'day' ? (
@@ -428,7 +451,12 @@ function App() {
                       <div className="lesson-stack">
                         {lessons.length > 0 ? (
                           lessons.map((lesson) => (
-                            <LessonLine key={lesson.id} lesson={lesson} targetMode={targetMode} onSelectTime={jumpToLessonTime} />
+                            <LessonLine
+                              key={lesson.id}
+                              lesson={lesson}
+                              targetMode={targetMode}
+                              onSelectBoundary={jumpFromLessonBoundary}
+                            />
                           ))
                         ) : (
                           <span className="muted-line">Nessuna lezione</span>
@@ -492,13 +520,13 @@ function LessonCard({
   lesson,
   targetMode,
   fallback,
-  onSelectTime,
+  onSelectBoundary,
 }: {
   title: string
   lesson: Lesson | null
   targetMode: 'class' | 'teacher'
   fallback: string
-  onSelectTime: (day: DayId, time: string) => void
+  onSelectBoundary: (lesson: Lesson, boundary: 'start' | 'end') => void
 }) {
   return (
     <article className="lesson-card current">
@@ -506,7 +534,7 @@ function LessonCard({
       {lesson ? (
         <>
           <h2>{targetMode === 'class' ? lesson.teacher : lesson.className}</h2>
-          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
+          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectBoundary={onSelectBoundary} />
         </>
       ) : (
         <>
@@ -522,12 +550,12 @@ function NextCard({
   lesson,
   targetMode,
   onOpenWeek,
-  onSelectTime,
+  onSelectBoundary,
 }: {
   lesson: Lesson | null
   targetMode: 'class' | 'teacher'
   onOpenWeek: () => void
-  onSelectTime: (day: DayId, time: string) => void
+  onSelectBoundary: (lesson: Lesson, boundary: 'start' | 'end') => void
 }) {
   return (
     <article className="lesson-card next">
@@ -540,7 +568,7 @@ function NextCard({
               <ArrowRight size={24} />
             </button>
           </div>
-          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
+          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectBoundary={onSelectBoundary} />
         </>
       ) : (
         <>
@@ -560,16 +588,16 @@ function NextCard({
 function LessonLine({
   lesson,
   targetMode,
-  onSelectTime,
+  onSelectBoundary,
 }: {
   lesson: Lesson
   targetMode: 'class' | 'teacher'
-  onSelectTime: (day: DayId, time: string) => void
+  onSelectBoundary: (lesson: Lesson, boundary: 'start' | 'end') => void
 }) {
   return (
     <div className="lesson-line">
       <strong>{targetMode === 'class' ? lesson.teacher : lesson.className}</strong>
-      <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
+      <LessonMeta lesson={lesson} targetMode={targetMode} onSelectBoundary={onSelectBoundary} />
     </div>
   )
 }
@@ -608,18 +636,18 @@ function WeekSlot({
 function LessonMeta({
   lesson,
   targetMode,
-  onSelectTime,
+  onSelectBoundary,
 }: {
   lesson: Lesson
   targetMode: 'class' | 'teacher'
-  onSelectTime?: (day: DayId, time: string) => void
+  onSelectBoundary?: (lesson: Lesson, boundary: 'start' | 'end') => void
 }) {
-  const timeChip = (time: string, label: string) =>
-    onSelectTime ? (
+  const timeChip = (time: string, boundary: 'start' | 'end', label: string) =>
+    onSelectBoundary ? (
       <button
         className="lesson-time-button"
         type="button"
-        onClick={() => onSelectTime(lesson.day, time)}
+        onClick={() => onSelectBoundary(lesson, boundary)}
         title={label}
         aria-label={label}
       >
@@ -631,9 +659,45 @@ function LessonMeta({
 
   return (
     <div className="lesson-meta">
-      {timeChip(lesson.startTime, `Mostra intervallo dalle ${lesson.startTime}`)}
-      {timeChip(lesson.endTime, `Mostra intervallo dalle ${lesson.endTime}`)}
+      {timeChip(lesson.startTime, 'start', 'Mostra intervallo precedente')}
+      {timeChip(lesson.endTime, 'end', 'Mostra intervallo successivo')}
       <span>{targetMode === 'class' ? lesson.dayLabel : lesson.teacher}</span>
+    </div>
+  )
+}
+
+function SchoolTimeSlider({
+  times,
+  valueIndex,
+  disabled,
+  onChange,
+}: {
+  times: string[]
+  valueIndex: number
+  disabled: boolean
+  onChange: (time: string) => void
+}) {
+  const safeValueIndex = Math.min(Math.max(valueIndex, 0), Math.max(times.length - 1, 0))
+
+  return (
+    <div className={disabled ? 'school-slider disabled' : 'school-slider'}>
+      <input
+        id="time"
+        type="range"
+        min="0"
+        max={Math.max(times.length - 1, 0)}
+        step="1"
+        value={safeValueIndex}
+        disabled={disabled || times.length === 0}
+        onChange={(event) => onChange(times[Number(event.target.value)] ?? times[0] ?? '08:10')}
+      />
+      <div className="time-ticks" aria-hidden="true">
+        {times.map((time, index) => (
+          <span className={index === safeValueIndex ? 'active' : ''} key={time}>
+            {time}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -684,6 +748,24 @@ function timeFromDate(date: Date): string {
 function minutesFromMidnight(time: string): number {
   const [hours, minutes] = time.split(':').map(Number)
   return hours * 60 + minutes
+}
+
+function nearestTimeIndex(time: string, times: string[]): number {
+  if (times.length === 0) return 0
+
+  const minutes = minutesFromMidnight(time)
+  let nearest = 0
+  let distance = Number.POSITIVE_INFINITY
+
+  times.forEach((candidate, index) => {
+    const currentDistance = Math.abs(minutes - minutesFromMidnight(candidate))
+    if (currentDistance < distance) {
+      nearest = index
+      distance = currentDistance
+    }
+  })
+
+  return nearest
 }
 
 function addMinutes(time: string, amount: number): string {
