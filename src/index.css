@@ -1082,6 +1082,22 @@ input[type='time']:hover,
     width: 100%;
   }
 
+  .segmented button {
+    min-width: 0;
+    min-height: 44px;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: 0.98rem;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .segmented button svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+  }
+
   .timeline-row {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -1100,6 +1116,24 @@ input[type='time']:hover,
 
   .week-grid {
     min-width: 760px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .liquid-segmented::after {
+    opacity: 0;
+  }
+
+  .segmented button:hover {
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .segmented button.active:hover {
+    color: var(--ink);
+    background: transparent;
   }
 }
 

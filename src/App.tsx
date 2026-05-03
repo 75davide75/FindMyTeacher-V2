@@ -186,6 +186,16 @@ function App() {
     setSelectedClass(lesson.className)
   }
 
+  function acceptFirstTeacherResult() {
+    if (!teacherQuery.trim()) return
+
+    const firstTeacher = filteredTeachers[0]
+    if (!firstTeacher) return
+
+    setTeacherQuery(firstTeacher)
+    setTeacherMenuOpen(false)
+  }
+
   async function handleFile(file: File | undefined) {
     if (!file) return
 
@@ -353,7 +363,15 @@ function App() {
                         setTeacherQuery(event.target.value)
                         setTeacherMenuOpen(true)
                       }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return
+
+                        event.preventDefault()
+                        acceptFirstTeacherResult()
+                        event.currentTarget.blur()
+                      }}
                       onFocus={() => setTeacherMenuOpen(true)}
+                      enterKeyHint="done"
                       placeholder="Es. GRECO"
                     />
                   </div>
