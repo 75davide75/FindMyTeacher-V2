@@ -30,14 +30,18 @@ function App() {
   const [useLiveTime, setUseLiveTime] = useState(true)
   const [clock, setClock] = useState(() => new Date())
   const [manualDay, setManualDay] = useState<DayId>('monday')
-  const [manualTime, setManualTime] = useState('08:00')
+  const [manualTime, setManualTime] = useState('08:10')
 
   function applySchedule(nextSchedule: ScheduleData | null) {
-    setSchedule(nextSchedule)
-    if (!nextSchedule) return
+    if (!nextSchedule) {
+      setSchedule(null)
+      return
+    }
 
-    setSelectedClass((current) => (nextSchedule.classes.includes(current) ? current : (nextSchedule.classes[0] ?? '')))
-    setTeacherQuery((current) => resolveTeacher(nextSchedule.teachers, current) ?? nextSchedule.teachers[0] ?? '')
+    const normalizedSchedule = normalizeScheduleTimes(nextSchedule)
+    setSchedule(normalizedSchedule)
+    setSelectedClass((current) => (normalizedSchedule.classes.includes(current) ? current : (normalizedSchedule.classes[0] ?? '')))
+    setTeacherQuery((current) => resolveTeacher(normalizedSchedule.teachers, current) ?? normalizedSchedule.teachers[0] ?? '')
   }
 
   async function loadSchedule(): Promise<{ schedule: ScheduleData | null; apiAvailable: boolean }> {
@@ -510,18 +514,68 @@ function minutesFromMidnight(time: string): number {
   return hours * 60 + minutes
 }
 
+function addMinutes(time: string, amount: number): string {
+  const total = minutesFromMidnight(time) + amount
+  const hours = Math.floor(total / 60)
+  const minutes = total % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+function periodToSchoolStartTime(period: number): string {
+  return `${String(period + 7).padStart(2, '0')}:10`
+}
+
+function lessonId(className: string, day: DayId, startTime: string, teacher: string): string {
+  return [className, day, startTime, teacher]
+    .join('-')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+}
+
+function normalizeScheduleTimes(schedule: ScheduleData): ScheduleData {
+  const periods = schedule.periods.map((period, index, allPeriods) => {
+    const startTime = periodToSchoolStartTime(period.number)
+    const nextPeriod = allPeriods[index + 1]
+
+    return {
+      ...period,
+      startTime,
+      endTime: nextPeriod ? periodToSchoolStartTime(nextPeriod.number) : addMinutes(startTime, 60),
+    }
+  })
+  const periodByNumber = new Map(periods.map((period) => [period.number, period]))
+
+  return {
+    ...schedule,
+    periods,
+    lessons: schedule.lessons.map((lesson) => {
+      const period = periodByNumber.get(lesson.period)
+      const startTime = period?.startTime ?? periodToSchoolStartTime(lesson.period)
+      const endTime = period?.endTime ?? addMinutes(startTime, 60)
+
+      return {
+        ...lesson,
+        startTime,
+        endTime,
+        id: lessonId(lesson.className, lesson.day, startTime, lesson.teacher),
+      }
+    }),
+  }
+}
+
 function weekendText(day: DayId | null, time: string): string {
   if (!day) return 'Oggi non e nel calendario scolastico.'
   const minutes = minutesFromMidnight(time)
-  if (minutes < 8 * 60) return 'Le lezioni non sono ancora iniziate.'
-  if (minutes >= 14 * 60) return 'Le lezioni sono terminate.'
+  if (minutes < minutesFromMidnight('08:10')) return 'Le lezioni non sono ancora iniziate.'
+  if (minutes >= minutesFromMidnight('14:10')) return 'Le lezioni sono terminate.'
   return 'Nessun docente in questa fascia.'
 }
 
 function readStoredSchedule(): ScheduleData | null {
   try {
     const value = localStorage.getItem(scheduleStorageKey)
-    return value ? (JSON.parse(value) as ScheduleData) : null
+    return value ? normalizeScheduleTimes(JSON.parse(value) as ScheduleData) : null
   } catch {
     return null
   }
@@ -529,7 +583,7 @@ function readStoredSchedule(): ScheduleData | null {
 
 function storeSchedule(schedule: ScheduleData) {
   try {
-    localStorage.setItem(scheduleStorageKey, JSON.stringify(schedule))
+    localStorage.setItem(scheduleStorageKey, JSON.stringify(normalizeScheduleTimes(schedule)))
   } catch {
     // L'orario resta caricato anche se il browser blocca il salvataggio locale.
   }

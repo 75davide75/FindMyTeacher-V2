@@ -188,8 +188,9 @@ function extractClassLessons(rows: TextRow[], columnStarts: number[]): Lesson[] 
     const timeItem = row.items.find((item) => item.x >= 70 && item.x <= 125 && timePattern.test(item.str))
     if (!timeItem || !currentClass) continue
 
-    const startTime = normalizeTime(timeItem.str)
-    const period = Math.max(1, Number.parseInt(startTime.split(':')[0], 10) - 7)
+    const parsedStartTime = normalizeTime(timeItem.str)
+    const period = Math.max(1, Number.parseInt(parsedStartTime.split(':')[0], 10) - 7)
+    const startTime = periodToStartTime(period)
 
     for (const item of row.items) {
       if (item === timeItem || item === classItem || item.x < 120) continue
@@ -334,7 +335,7 @@ function addMinutes(time: string, amount: number): string {
 }
 
 function periodToStartTime(period: number): string {
-  return `${String(period + 7).padStart(2, '0')}:00`
+  return `${String(period + 7).padStart(2, '0')}:10`
 }
 
 function minutesFromMidnight(time: string): number {
