@@ -10,7 +10,7 @@ import {
   Upload,
   UserRound,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { dayOrder, type DayId, type Lesson, type ScheduleData } from './types'
 
 const scheduleStorageKey = 'findmyteacher.schedule'
@@ -23,7 +23,7 @@ function App() {
   const [apiAvailable, setApiAvailable] = useState(true)
   const [error, setError] = useState('')
   const [targetMode, setTargetMode] = useState<'class' | 'teacher'>('class')
-  const [viewMode, setViewMode] = useState<'now' | 'day'>('now')
+  const [viewMode, setViewMode] = useState<'now' | 'day' | 'week'>('now')
   const [selectedClass, setSelectedClass] = useState('')
   const [teacherQuery, setTeacherQuery] = useState('')
   const [teacherMenuOpen, setTeacherMenuOpen] = useState(false)
@@ -101,6 +101,14 @@ function App() {
 
     return schedule.teachers.filter((teacher) => teacher.toLowerCase().includes(normalizedQuery))
   }, [schedule, teacherQuery])
+  const targetSegmentStyle = {
+    '--segments': 2,
+    '--active-index': targetMode === 'class' ? 0 : 1,
+  } as CSSProperties
+  const viewSegmentStyle = {
+    '--segments': 3,
+    '--active-index': viewMode === 'now' ? 0 : viewMode === 'day' ? 1 : 2,
+  } as CSSProperties
 
   const targetLessons = useMemo(() => {
     if (!schedule) return []
@@ -245,7 +253,7 @@ function App() {
           </section>
 
           <section className="control-panel">
-            <div className="segmented" aria-label="Tipo ricerca">
+            <div className="segmented liquid-segmented" style={targetSegmentStyle} aria-label="Tipo ricerca">
               <button className={targetMode === 'class' ? 'active' : ''} type="button" onClick={() => setTargetMode('class')}>
                 <GraduationCap size={17} />
                 Classe
@@ -313,7 +321,7 @@ function App() {
               )}
             </div>
 
-            <div className="segmented" aria-label="Vista">
+            <div className="segmented liquid-segmented" style={viewSegmentStyle} aria-label="Vista">
               <button className={viewMode === 'now' ? 'active' : ''} type="button" onClick={() => setViewMode('now')}>
                 <Clock3 size={17} />
                 Adesso
@@ -322,74 +330,116 @@ function App() {
                 <CalendarDays size={17} />
                 Giorno
               </button>
+              <button className={viewMode === 'week' ? 'active' : ''} type="button" onClick={() => setViewMode('week')}>
+                <CalendarDays size={17} />
+                Settimana
+              </button>
             </div>
           </section>
 
-          <section className="time-panel">
-            <label className="toggle-row">
-              <input type="checkbox" checked={useLiveTime} onChange={(event) => setUseLiveTime(event.target.checked)} />
-              Ora corrente
-            </label>
+          {viewMode !== 'week' ? (
+            <section className="time-panel">
+              <label className="toggle-row">
+                <input type="checkbox" checked={useLiveTime} onChange={(event) => setUseLiveTime(event.target.checked)} />
+                Ora corrente
+              </label>
 
-            <div className="field compact">
-              <label htmlFor="day">Giorno</label>
-              <select
-                id="day"
-                value={viewMode === 'day' || !activeDay ? manualDay : activeDay}
-                disabled={viewMode === 'now' && useLiveTime}
-                onChange={(event) => setManualDay(event.target.value as DayId)}
-              >
-                {schedule.days.map((day) => (
-                  <option key={day.id} value={day.id}>
-                    {day.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field compact">
-              <label htmlFor="time">Ora</label>
-              <input
-                id="time"
-                type="time"
-                value={activeTime}
-                disabled={viewMode === 'day' || useLiveTime}
-                onChange={(event) => setManualTime(event.target.value)}
-              />
-            </div>
-          </section>
-
-          {viewMode === 'now' ? (
-            <section className="now-grid">
-              <LessonCard title="Ora corrente" lesson={currentLesson} targetMode={targetMode} fallback={weekendText(activeDay, activeTime)} />
-              <NextCard lesson={nextLesson} targetMode={targetMode} />
-            </section>
-          ) : (
-            <section className="day-card">
-              <div className="section-heading">
-                <h2>{schedule.days.find((day) => day.id === manualDay)?.label}</h2>
-                <span>{targetMode === 'class' ? selectedClass : selectedTeacher}</span>
+              <div className="field compact">
+                <label htmlFor="day">Giorno</label>
+                <select
+                  id="day"
+                  value={viewMode === 'day' || !activeDay ? manualDay : activeDay}
+                  disabled={viewMode !== 'day' && useLiveTime}
+                  onChange={(event) => setManualDay(event.target.value as DayId)}
+                >
+                  {schedule.days.map((day) => (
+                    <option key={day.id} value={day.id}>
+                      {day.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="timeline">
-                {dayPlan.map(({ period, lessons }) => (
-                  <div className="timeline-row" key={period.number}>
-                    <div className="time-chip">
-                      <span>{period.startTime}</span>
-                      <small>{period.endTime}</small>
+              <div className="field compact">
+                <label htmlFor="time">Ora</label>
+                <input
+                  id="time"
+                  type="time"
+                  value={activeTime}
+                  disabled={viewMode === 'day' || useLiveTime}
+                  onChange={(event) => setManualTime(event.target.value)}
+                />
+              </div>
+            </section>
+          ) : null}
+
+          <div className="view-stage" key={viewMode}>
+            {viewMode === 'now' ? (
+              <section className="now-grid">
+                <LessonCard title="Ora corrente" lesson={currentLesson} targetMode={targetMode} fallback={weekendText(activeDay, activeTime)} />
+                <NextCard lesson={nextLesson} targetMode={targetMode} onOpenWeek={() => setViewMode('week')} />
+              </section>
+            ) : viewMode === 'day' ? (
+              <section className="day-card">
+                <div className="section-heading">
+                  <h2>{schedule.days.find((day) => day.id === manualDay)?.label}</h2>
+                  <span>{targetMode === 'class' ? selectedClass : selectedTeacher}</span>
+                </div>
+
+                <div className="timeline">
+                  {dayPlan.map(({ period, lessons }) => (
+                    <div className="timeline-row" key={period.number}>
+                      <div className="time-chip">
+                        <span>{period.startTime}</span>
+                        <small>{period.endTime}</small>
+                      </div>
+                      <div className="lesson-stack">
+                        {lessons.length > 0 ? (
+                          lessons.map((lesson) => <LessonLine key={lesson.id} lesson={lesson} targetMode={targetMode} />)
+                        ) : (
+                          <span className="muted-line">Nessuna lezione</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="lesson-stack">
-                      {lessons.length > 0 ? (
-                        lessons.map((lesson) => <LessonLine key={lesson.id} lesson={lesson} targetMode={targetMode} />)
-                      ) : (
-                        <span className="muted-line">Nessuna lezione</span>
-                      )}
-                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="week-card">
+                <div className="section-heading">
+                  <h2>Settimana</h2>
+                  <span>{targetMode === 'class' ? selectedClass : selectedTeacher}</span>
+                </div>
+
+                <div className="week-scroll">
+                  <div className="week-grid" style={{ '--day-count': schedule.days.length } as CSSProperties}>
+                    <div className="week-heading week-time-heading">Ora</div>
+                    {schedule.days.map((day) => (
+                      <div className="week-heading" key={day.id}>
+                        {day.label}
+                      </div>
+                    ))}
+
+                    {schedule.periods.map((period) => (
+                      <Fragment key={period.number}>
+                        <div className="week-time">
+                          <span>{period.startTime}</span>
+                          <small>{period.endTime}</small>
+                        </div>
+                        {schedule.days.map((day) => {
+                          const lessons = targetLessons
+                            .filter((lesson) => lesson.day === day.id && lesson.startTime === period.startTime)
+                            .sort((a, b) => a.className.localeCompare(b.className, 'it'))
+
+                          return <WeekSlot key={`${period.number}-${day.id}`} lessons={lessons} targetMode={targetMode} />
+                        })}
+                      </Fragment>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </div>
+              </section>
+            )}
+          </div>
         </>
       )}
     </main>
@@ -425,7 +475,15 @@ function LessonCard({
   )
 }
 
-function NextCard({ lesson, targetMode }: { lesson: Lesson | null; targetMode: 'class' | 'teacher' }) {
+function NextCard({
+  lesson,
+  targetMode,
+  onOpenWeek,
+}: {
+  lesson: Lesson | null
+  targetMode: 'class' | 'teacher'
+  onOpenWeek: () => void
+}) {
   return (
     <article className="lesson-card next">
       <p>Prossima ora</p>
@@ -433,13 +491,20 @@ function NextCard({ lesson, targetMode }: { lesson: Lesson | null; targetMode: '
         <>
           <div className="next-title">
             <h2>{targetMode === 'class' ? lesson.teacher : lesson.className}</h2>
-            <ArrowRight size={22} />
+            <button className="week-jump" type="button" onClick={onOpenWeek} aria-label="Mostra settimana" title="Mostra settimana">
+              <ArrowRight size={24} />
+            </button>
           </div>
           <LessonMeta lesson={lesson} targetMode={targetMode} />
         </>
       ) : (
         <>
-          <h2>Fine giornata</h2>
+          <div className="next-title">
+            <h2>Fine giornata</h2>
+            <button className="week-jump" type="button" onClick={onOpenWeek} aria-label="Mostra settimana" title="Mostra settimana">
+              <ArrowRight size={24} />
+            </button>
+          </div>
           <span className="muted-line">Nessuna lezione successiva</span>
         </>
       )}
@@ -452,6 +517,22 @@ function LessonLine({ lesson, targetMode }: { lesson: Lesson; targetMode: 'class
     <div className="lesson-line">
       <strong>{targetMode === 'class' ? lesson.teacher : lesson.className}</strong>
       <LessonMeta lesson={lesson} targetMode={targetMode} />
+    </div>
+  )
+}
+
+function WeekSlot({ lessons, targetMode }: { lessons: Lesson[]; targetMode: 'class' | 'teacher' }) {
+  return (
+    <div className={lessons.length > 0 ? 'week-slot has-lesson' : 'week-slot'}>
+      {lessons.length > 0 ? (
+        lessons.map((lesson) => (
+          <span className="week-pill" key={lesson.id}>
+            {targetMode === 'class' ? lesson.teacher : lesson.className}
+          </span>
+        ))
+      ) : (
+        <span className="week-empty">Libero</span>
+      )}
     </div>
   )
 }

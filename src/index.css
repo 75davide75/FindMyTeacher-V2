@@ -9,6 +9,7 @@
   --green: #198754;
   --coral: #d85f45;
   --yellow: #f5b841;
+  --focus-glow: 0 0 0 4px rgba(31, 122, 224, 0.14);
   --shadow: 0 18px 60px rgba(29, 35, 46, 0.12);
   --radius: 8px;
   font-family:
@@ -46,6 +47,12 @@ select {
 
 button {
   cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease;
 }
 
 button:disabled,
@@ -136,10 +143,27 @@ p {
   padding: 0 14px;
   color: var(--ink);
   background: var(--panel-strong);
+  box-shadow: 0 0 0 rgba(29, 35, 46, 0);
 }
 
 .icon-button:hover {
-  transform: translateY(-1px);
+  border-color: rgba(31, 122, 224, 0.28);
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(29, 35, 46, 0.12);
+  transform: translateY(-2px);
+}
+
+.icon-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.icon-button:focus-visible,
+.segmented button:focus-visible,
+.week-jump:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .primary-action {
@@ -147,6 +171,12 @@ p {
   color: #ffffff;
   background: var(--blue);
   box-shadow: 0 10px 24px rgba(31, 122, 224, 0.24);
+}
+
+.primary-action:hover {
+  color: #ffffff;
+  background: #186bc6;
+  box-shadow: 0 14px 30px rgba(31, 122, 224, 0.3);
 }
 
 .alert {
@@ -232,17 +262,45 @@ p {
 }
 
 .segmented {
+  position: relative;
   display: inline-grid;
   grid-auto-columns: 1fr;
   grid-auto-flow: column;
-  gap: 4px;
+  gap: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 4px;
-  background: rgba(247, 248, 250, 0.78);
+  overflow: hidden;
+  background: rgba(247, 248, 250, 0.62);
+  backdrop-filter: blur(18px) saturate(1.25);
+  isolation: isolate;
+}
+
+.liquid-segmented::before {
+  position: absolute;
+  z-index: 0;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--segments));
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 6px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.74)),
+    rgba(255, 255, 255, 0.86);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 20px rgba(29, 35, 46, 0.12);
+  content: '';
+  transform: translateX(calc(var(--active-index) * 100%));
+  transition:
+    transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms ease;
 }
 
 .segmented button {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   min-height: 40px;
   align-items: center;
@@ -255,10 +313,19 @@ p {
   background: transparent;
 }
 
+.segmented button:hover {
+  color: var(--ink);
+  background: rgba(31, 122, 224, 0.08);
+}
+
+.segmented button:active {
+  transform: scale(0.97);
+}
+
 .segmented button.active {
   color: var(--ink);
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(29, 35, 46, 0.1);
+  background: transparent;
+  box-shadow: none;
 }
 
 .field {
@@ -287,11 +354,29 @@ input[type='time'],
   border-radius: var(--radius);
   color: var(--ink);
   background: rgba(255, 255, 255, 0.88);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
 }
 
 select,
 input[type='time'] {
   padding: 0 12px;
+}
+
+select:hover,
+input[type='time']:hover,
+.search-field:hover,
+.search-field:focus-within {
+  border-color: rgba(31, 122, 224, 0.26);
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(29, 35, 46, 0.08);
+}
+
+.search-field:focus-within {
+  box-shadow: var(--focus-glow);
 }
 
 .search-field {
@@ -349,6 +434,7 @@ input[type='time'] {
 .teacher-menu button[aria-selected='true'] {
   color: #ffffff;
   background: var(--blue);
+  transform: translateX(2px);
 }
 
 .teacher-menu span {
@@ -378,11 +464,16 @@ input[type='time'] {
 }
 
 .lesson-card,
-.day-card {
+.day-card,
+.week-card {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel-strong);
   box-shadow: var(--shadow);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .lesson-card {
@@ -391,6 +482,14 @@ input[type='time'] {
   align-content: space-between;
   gap: 18px;
   padding: 22px;
+}
+
+.lesson-card:hover,
+.day-card:hover,
+.week-card:hover {
+  border-color: rgba(31, 122, 224, 0.18);
+  box-shadow: 0 22px 66px rgba(29, 35, 46, 0.15);
+  transform: translateY(-2px);
 }
 
 .lesson-card.current {
@@ -411,14 +510,42 @@ input[type='time'] {
 
 .next-title {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
-.next-title svg {
-  flex: 0 0 auto;
+.next-title h2 {
+  min-width: 0;
+}
+
+.week-jump {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid rgba(216, 95, 69, 0.28);
+  border-radius: 999px;
   color: var(--coral);
+  background: rgba(216, 95, 69, 0.1);
+  box-shadow: 0 10px 26px rgba(216, 95, 69, 0.12);
+}
+
+.week-jump svg {
+  flex: 0 0 auto;
+  stroke-width: 2.5;
+}
+
+.week-jump:hover {
+  color: #ffffff;
+  background: var(--coral);
+  box-shadow: 0 16px 34px rgba(216, 95, 69, 0.28);
+  transform: translateX(3px) scale(1.03);
+}
+
+.week-jump:active {
+  transform: translateX(0) scale(0.97);
 }
 
 .lesson-meta {
@@ -437,7 +564,8 @@ input[type='time'] {
   font-weight: 700;
 }
 
-.day-card {
+.day-card,
+.week-card {
   margin-top: 16px;
   overflow: hidden;
 }
@@ -513,6 +641,18 @@ input[type='time'] {
   border-radius: var(--radius);
   padding: 10px 12px;
   background: rgba(246, 247, 249, 0.78);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.lesson-line:hover {
+  border-color: rgba(31, 122, 224, 0.24);
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(29, 35, 46, 0.08);
+  transform: translateX(2px);
 }
 
 .lesson-line strong {
@@ -527,6 +667,103 @@ input[type='time'] {
 
 .lesson-line .lesson-meta span:last-child {
   display: none;
+}
+
+.view-stage {
+  animation: viewIn 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.week-scroll {
+  overflow-x: auto;
+}
+
+.week-grid {
+  display: grid;
+  min-width: 860px;
+  grid-template-columns: 96px repeat(var(--day-count), minmax(136px, 1fr));
+  border-top: 1px solid var(--line);
+}
+
+.week-heading,
+.week-time,
+.week-slot {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 12px;
+}
+
+.week-heading:nth-child(6n),
+.week-grid > :nth-child(6n) {
+  border-right: 0;
+}
+
+.week-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.94);
+  font-weight: 800;
+}
+
+.week-time-heading,
+.week-time {
+  color: var(--muted);
+  background: rgba(246, 247, 249, 0.82);
+}
+
+.week-time {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+}
+
+.week-time span {
+  color: var(--ink);
+  font-weight: 820;
+}
+
+.week-time small {
+  color: var(--muted);
+}
+
+.week-slot {
+  display: grid;
+  align-content: start;
+  min-height: 82px;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.72);
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.week-slot:hover {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(31, 122, 224, 0.14);
+}
+
+.week-slot.has-lesson {
+  background: rgba(31, 122, 224, 0.055);
+}
+
+.week-pill {
+  display: block;
+  width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(31, 122, 224, 0.16);
+  border-radius: 7px;
+  padding: 7px 8px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.86);
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.week-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .loader {
@@ -550,6 +787,18 @@ input[type='time'] {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -599,5 +848,19 @@ input[type='time'] {
 
   .lesson-card {
     min-height: 220px;
+  }
+
+  .week-grid {
+    min-width: 760px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }
