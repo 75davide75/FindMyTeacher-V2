@@ -64,6 +64,8 @@ select:disabled {
 
 select:disabled {
   appearance: none;
+  background-image: none;
+  -webkit-appearance: none;
 }
 
 h1,
@@ -281,7 +283,7 @@ input:focus-visible {
 .time-panel {
   position: relative;
   z-index: 10;
-  grid-template-columns: auto minmax(160px, 220px) minmax(140px, 180px);
+  grid-template-columns: auto minmax(160px, 220px) minmax(260px, 360px);
 }
 
 .segmented {
@@ -445,8 +447,15 @@ input[type='time'],
 
 .school-slider {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
 }
 
 .school-slider input[type='range'] {
@@ -461,6 +470,30 @@ input[type='time'],
 
 .school-slider input[type='range']:disabled {
   cursor: not-allowed;
+}
+
+.school-slider output {
+  min-width: 64px;
+  border: 1px solid rgba(31, 122, 224, 0.2);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #155aa8;
+  background: rgba(31, 122, 224, 0.1);
+  font-size: 0.92rem;
+  font-weight: 850;
+  text-align: center;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.school-slider:not(.disabled):hover output {
+  border-color: rgba(31, 122, 224, 0.4);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(31, 122, 224, 0.12);
+  transform: translateY(-1px);
 }
 
 .school-slider input[type='range']::-webkit-slider-runnable-track {
@@ -508,31 +541,16 @@ input[type='time'],
   box-shadow: 0 8px 18px rgba(31, 122, 224, 0.28);
 }
 
-.time-ticks {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-}
-
-.time-ticks span {
-  min-width: 0;
-  border-radius: 999px;
-  padding: 4px 2px;
+.time-range-labels {
+  display: flex;
+  justify-content: space-between;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 760;
-  text-align: center;
-  transition:
-    background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
 }
 
-.school-slider:not(.disabled) .time-ticks span:hover,
-.time-ticks span.active {
-  color: #155aa8;
-  background: rgba(31, 122, 224, 0.12);
-  transform: translateY(-1px);
+.time-range-labels span:last-child {
+  text-align: right;
 }
 
 select,

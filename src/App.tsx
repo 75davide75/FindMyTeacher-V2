@@ -402,7 +402,7 @@ function App() {
               <div className="field compact">
                 <div className="field-heading">
                   <label htmlFor="time">Ora</label>
-                  <span>{useLiveTime ? activeTime : manualTime}</span>
+                  <span>{useLiveTime ? `Live ${activeTime}` : 'Manuale'}</span>
                 </div>
                 <SchoolTimeSlider
                   times={schoolTimes}
@@ -678,25 +678,26 @@ function SchoolTimeSlider({
   onChange: (time: string) => void
 }) {
   const safeValueIndex = Math.min(Math.max(valueIndex, 0), Math.max(times.length - 1, 0))
+  const selectedTime = times[safeValueIndex] ?? '08:10'
 
   return (
     <div className={disabled ? 'school-slider disabled' : 'school-slider'}>
-      <input
-        id="time"
-        type="range"
-        min="0"
-        max={Math.max(times.length - 1, 0)}
-        step="1"
-        value={safeValueIndex}
-        disabled={disabled || times.length === 0}
-        onChange={(event) => onChange(times[Number(event.target.value)] ?? times[0] ?? '08:10')}
-      />
-      <div className="time-ticks" aria-hidden="true">
-        {times.map((time, index) => (
-          <span className={index === safeValueIndex ? 'active' : ''} key={time}>
-            {time}
-          </span>
-        ))}
+      <div className="slider-row">
+        <input
+          id="time"
+          type="range"
+          min="0"
+          max={Math.max(times.length - 1, 0)}
+          step="1"
+          value={safeValueIndex}
+          disabled={disabled || times.length === 0}
+          onChange={(event) => onChange(times[Number(event.target.value)] ?? times[0] ?? '08:10')}
+        />
+        <output htmlFor="time">{selectedTime}</output>
+      </div>
+      <div className="time-range-labels" aria-hidden="true">
+        <span>{times[0] ?? '08:10'}</span>
+        <span>{times.at(-1) ?? '14:10'}</span>
       </div>
     </div>
   )
