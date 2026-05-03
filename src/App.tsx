@@ -31,6 +31,8 @@ function App() {
   const [clock, setClock] = useState(() => new Date())
   const [manualDay, setManualDay] = useState<DayId>('monday')
   const [manualTime, setManualTime] = useState('08:10')
+  const [targetHoverIndex, setTargetHoverIndex] = useState<number | null>(null)
+  const [viewHoverIndex, setViewHoverIndex] = useState<number | null>(null)
 
   function applySchedule(nextSchedule: ScheduleData | null) {
     if (!nextSchedule) {
@@ -104,10 +106,14 @@ function App() {
   const targetSegmentStyle = {
     '--segments': 2,
     '--active-index': targetMode === 'class' ? 0 : 1,
+    '--hover-index': targetHoverIndex ?? 0,
+    '--hover-opacity': targetHoverIndex === null ? 0 : 1,
   } as CSSProperties
   const viewSegmentStyle = {
     '--segments': 3,
     '--active-index': viewMode === 'now' ? 0 : viewMode === 'day' ? 1 : 2,
+    '--hover-index': viewHoverIndex ?? 0,
+    '--hover-opacity': viewHoverIndex === null ? 0 : 1,
   } as CSSProperties
   const schoolTimes = useMemo(() => {
     if (!schedule) return []
@@ -292,8 +298,20 @@ function App() {
           </section>
 
           <section className="control-panel">
-            <div className="segmented liquid-segmented" style={targetSegmentStyle} aria-label="Tipo ricerca">
-              <button className={targetMode === 'class' ? 'active' : ''} type="button" onClick={() => setTargetMode('class')}>
+            <div
+              className="segmented liquid-segmented"
+              style={targetSegmentStyle}
+              aria-label="Tipo ricerca"
+              onPointerLeave={() => setTargetHoverIndex(null)}
+            >
+              <button
+                className={targetMode === 'class' ? 'active' : ''}
+                type="button"
+                onClick={() => setTargetMode('class')}
+                onFocus={() => setTargetHoverIndex(0)}
+                onPointerEnter={() => setTargetHoverIndex(0)}
+                onPointerMove={() => setTargetHoverIndex(0)}
+              >
                 <GraduationCap size={17} />
                 Classe
               </button>
@@ -301,6 +319,9 @@ function App() {
                 className={targetMode === 'teacher' ? 'active' : ''}
                 type="button"
                 onClick={() => setTargetMode('teacher')}
+                onFocus={() => setTargetHoverIndex(1)}
+                onPointerEnter={() => setTargetHoverIndex(1)}
+                onPointerMove={() => setTargetHoverIndex(1)}
               >
                 <UserRound size={17} />
                 Docente
@@ -360,16 +381,42 @@ function App() {
               )}
             </div>
 
-            <div className="segmented liquid-segmented" style={viewSegmentStyle} aria-label="Vista">
-              <button className={viewMode === 'now' ? 'active' : ''} type="button" onClick={() => setViewMode('now')}>
+            <div
+              className="segmented liquid-segmented"
+              style={viewSegmentStyle}
+              aria-label="Vista"
+              onPointerLeave={() => setViewHoverIndex(null)}
+            >
+              <button
+                className={viewMode === 'now' ? 'active' : ''}
+                type="button"
+                onClick={() => setViewMode('now')}
+                onFocus={() => setViewHoverIndex(0)}
+                onPointerEnter={() => setViewHoverIndex(0)}
+                onPointerMove={() => setViewHoverIndex(0)}
+              >
                 <Clock3 size={17} />
                 Adesso
               </button>
-              <button className={viewMode === 'day' ? 'active' : ''} type="button" onClick={() => setViewMode('day')}>
+              <button
+                className={viewMode === 'day' ? 'active' : ''}
+                type="button"
+                onClick={() => setViewMode('day')}
+                onFocus={() => setViewHoverIndex(1)}
+                onPointerEnter={() => setViewHoverIndex(1)}
+                onPointerMove={() => setViewHoverIndex(1)}
+              >
                 <CalendarDays size={17} />
                 Giorno
               </button>
-              <button className={viewMode === 'week' ? 'active' : ''} type="button" onClick={() => setViewMode('week')}>
+              <button
+                className={viewMode === 'week' ? 'active' : ''}
+                type="button"
+                onClick={() => setViewMode('week')}
+                onFocus={() => setViewHoverIndex(2)}
+                onPointerEnter={() => setViewHoverIndex(2)}
+                onPointerMove={() => setViewHoverIndex(2)}
+              >
                 <CalendarDays size={17} />
                 Settimana
               </button>
