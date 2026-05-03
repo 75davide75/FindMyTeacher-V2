@@ -43,7 +43,7 @@ function App() {
     const normalizedSchedule = normalizeScheduleTimes(nextSchedule)
     setSchedule(normalizedSchedule)
     setSelectedClass((current) => (normalizedSchedule.classes.includes(current) ? current : (normalizedSchedule.classes[0] ?? '')))
-    setTeacherQuery((current) => resolveTeacher(normalizedSchedule.teachers, current) ?? normalizedSchedule.teachers[0] ?? '')
+    setTeacherQuery((current) => resolveTeacher(normalizedSchedule.teachers, current) ?? '')
   }
 
   async function loadSchedule(): Promise<{ schedule: ScheduleData | null; apiAvailable: boolean }> {
@@ -318,7 +318,10 @@ function App() {
               <button
                 className={targetMode === 'teacher' ? 'active' : ''}
                 type="button"
-                onClick={() => setTargetMode('teacher')}
+                onClick={() => {
+                  if (targetMode !== 'teacher') setTeacherQuery('')
+                  setTargetMode('teacher')
+                }}
                 onFocus={() => setTargetHoverIndex(1)}
                 onPointerEnter={() => setTargetHoverIndex(1)}
                 onPointerMove={() => setTargetHoverIndex(1)}
@@ -351,7 +354,7 @@ function App() {
                         setTeacherMenuOpen(true)
                       }}
                       onFocus={() => setTeacherMenuOpen(true)}
-                      placeholder="Es. CIPRIANI"
+                      placeholder="Es. GRECO"
                     />
                   </div>
                   {teacherMenuOpen ? (
