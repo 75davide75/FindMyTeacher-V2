@@ -617,7 +617,8 @@ input[type='time']:hover,
   gap: 8px;
 }
 
-.lesson-meta span {
+.lesson-meta span,
+.lesson-meta button {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 6px 10px;
@@ -632,11 +633,28 @@ input[type='time']:hover,
     transform 180ms ease;
 }
 
-.lesson-meta span:hover {
+.lesson-meta span:hover,
+.lesson-meta button:hover {
   border-color: rgba(31, 122, 224, 0.22);
   color: var(--ink);
   background: #ffffff;
   transform: translateY(-1px);
+}
+
+.lesson-meta button {
+  cursor: pointer;
+}
+
+.lesson-time-button {
+  box-shadow: 0 0 0 rgba(31, 122, 224, 0);
+}
+
+.lesson-time-button:hover {
+  box-shadow: 0 8px 18px rgba(31, 122, 224, 0.12);
+}
+
+.lesson-time-button:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .day-card,

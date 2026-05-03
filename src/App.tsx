@@ -141,6 +141,13 @@ function App() {
     }))
   }, [activeDay, manualDay, schedule, targetLessons, viewMode])
 
+  function jumpToLessonTime(day: DayId, time: string) {
+    setViewMode('now')
+    setUseLiveTime(false)
+    setManualDay(day)
+    setManualTime(time)
+  }
+
   async function handleFile(file: File | undefined) {
     if (!file) return
 
@@ -376,8 +383,19 @@ function App() {
           <div className="view-stage" key={viewMode}>
             {viewMode === 'now' ? (
               <section className="now-grid">
-                <LessonCard title="Ora corrente" lesson={currentLesson} targetMode={targetMode} fallback={weekendText(activeDay, activeTime)} />
-                <NextCard lesson={nextLesson} targetMode={targetMode} onOpenWeek={() => setViewMode('week')} />
+                <LessonCard
+                  title="Ora corrente"
+                  lesson={currentLesson}
+                  targetMode={targetMode}
+                  fallback={weekendText(activeDay, activeTime)}
+                  onSelectTime={jumpToLessonTime}
+                />
+                <NextCard
+                  lesson={nextLesson}
+                  targetMode={targetMode}
+                  onOpenWeek={() => setViewMode('week')}
+                  onSelectTime={jumpToLessonTime}
+                />
               </section>
             ) : viewMode === 'day' ? (
               <section className="day-card">
@@ -395,7 +413,9 @@ function App() {
                       </div>
                       <div className="lesson-stack">
                         {lessons.length > 0 ? (
-                          lessons.map((lesson) => <LessonLine key={lesson.id} lesson={lesson} targetMode={targetMode} />)
+                          lessons.map((lesson) => (
+                            <LessonLine key={lesson.id} lesson={lesson} targetMode={targetMode} onSelectTime={jumpToLessonTime} />
+                          ))
                         ) : (
                           <span className="muted-line">Nessuna lezione</span>
                         )}
@@ -451,11 +471,13 @@ function LessonCard({
   lesson,
   targetMode,
   fallback,
+  onSelectTime,
 }: {
   title: string
   lesson: Lesson | null
   targetMode: 'class' | 'teacher'
   fallback: string
+  onSelectTime: (day: DayId, time: string) => void
 }) {
   return (
     <article className="lesson-card current">
@@ -463,7 +485,7 @@ function LessonCard({
       {lesson ? (
         <>
           <h2>{targetMode === 'class' ? lesson.teacher : lesson.className}</h2>
-          <LessonMeta lesson={lesson} targetMode={targetMode} />
+          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
         </>
       ) : (
         <>
@@ -479,10 +501,12 @@ function NextCard({
   lesson,
   targetMode,
   onOpenWeek,
+  onSelectTime,
 }: {
   lesson: Lesson | null
   targetMode: 'class' | 'teacher'
   onOpenWeek: () => void
+  onSelectTime: (day: DayId, time: string) => void
 }) {
   return (
     <article className="lesson-card next">
@@ -495,7 +519,7 @@ function NextCard({
               <ArrowRight size={24} />
             </button>
           </div>
-          <LessonMeta lesson={lesson} targetMode={targetMode} />
+          <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
         </>
       ) : (
         <>
@@ -512,11 +536,19 @@ function NextCard({
   )
 }
 
-function LessonLine({ lesson, targetMode }: { lesson: Lesson; targetMode: 'class' | 'teacher' }) {
+function LessonLine({
+  lesson,
+  targetMode,
+  onSelectTime,
+}: {
+  lesson: Lesson
+  targetMode: 'class' | 'teacher'
+  onSelectTime: (day: DayId, time: string) => void
+}) {
   return (
     <div className="lesson-line">
       <strong>{targetMode === 'class' ? lesson.teacher : lesson.className}</strong>
-      <LessonMeta lesson={lesson} targetMode={targetMode} />
+      <LessonMeta lesson={lesson} targetMode={targetMode} onSelectTime={onSelectTime} />
     </div>
   )
 }
@@ -537,11 +569,34 @@ function WeekSlot({ lessons, targetMode }: { lessons: Lesson[]; targetMode: 'cla
   )
 }
 
-function LessonMeta({ lesson, targetMode }: { lesson: Lesson; targetMode: 'class' | 'teacher' }) {
+function LessonMeta({
+  lesson,
+  targetMode,
+  onSelectTime,
+}: {
+  lesson: Lesson
+  targetMode: 'class' | 'teacher'
+  onSelectTime?: (day: DayId, time: string) => void
+}) {
+  const timeChip = (time: string, label: string) =>
+    onSelectTime ? (
+      <button
+        className="lesson-time-button"
+        type="button"
+        onClick={() => onSelectTime(lesson.day, time)}
+        title={label}
+        aria-label={label}
+      >
+        {time}
+      </button>
+    ) : (
+      <span>{time}</span>
+    )
+
   return (
     <div className="lesson-meta">
-      <span>{lesson.startTime}</span>
-      <span>{lesson.endTime}</span>
+      {timeChip(lesson.startTime, `Mostra intervallo dalle ${lesson.startTime}`)}
+      {timeChip(lesson.endTime, `Mostra intervallo dalle ${lesson.endTime}`)}
       <span>{targetMode === 'class' ? lesson.dayLabel : lesson.teacher}</span>
     </div>
   )
