@@ -148,6 +148,20 @@ function App() {
     setManualTime(time)
   }
 
+  function openCounterpartWeek(lesson: Lesson) {
+    setViewMode('week')
+    setTeacherMenuOpen(false)
+
+    if (targetMode === 'class') {
+      setTargetMode('teacher')
+      setTeacherQuery(lesson.teacher)
+      return
+    }
+
+    setTargetMode('class')
+    setSelectedClass(lesson.className)
+  }
+
   async function handleFile(file: File | undefined) {
     if (!file) return
 
@@ -451,7 +465,14 @@ function App() {
                             .filter((lesson) => lesson.day === day.id && lesson.startTime === period.startTime)
                             .sort((a, b) => a.className.localeCompare(b.className, 'it'))
 
-                          return <WeekSlot key={`${period.number}-${day.id}`} lessons={lessons} targetMode={targetMode} />
+                          return (
+                            <WeekSlot
+                              key={`${period.number}-${day.id}`}
+                              lessons={lessons}
+                              targetMode={targetMode}
+                              onOpenCounterpart={openCounterpartWeek}
+                            />
+                          )
                         })}
                       </Fragment>
                     ))}
@@ -553,14 +574,29 @@ function LessonLine({
   )
 }
 
-function WeekSlot({ lessons, targetMode }: { lessons: Lesson[]; targetMode: 'class' | 'teacher' }) {
+function WeekSlot({
+  lessons,
+  targetMode,
+  onOpenCounterpart,
+}: {
+  lessons: Lesson[]
+  targetMode: 'class' | 'teacher'
+  onOpenCounterpart: (lesson: Lesson) => void
+}) {
   return (
     <div className={lessons.length > 0 ? 'week-slot has-lesson' : 'week-slot'}>
       {lessons.length > 0 ? (
         lessons.map((lesson) => (
-          <span className="week-pill" key={lesson.id}>
+          <button
+            className="week-pill"
+            key={lesson.id}
+            type="button"
+            onClick={() => onOpenCounterpart(lesson)}
+            title={targetMode === 'class' ? `Apri settimana di ${lesson.teacher}` : `Apri settimana della classe ${lesson.className}`}
+            aria-label={targetMode === 'class' ? `Apri settimana di ${lesson.teacher}` : `Apri settimana della classe ${lesson.className}`}
+          >
             {targetMode === 'class' ? lesson.teacher : lesson.className}
-          </span>
+          </button>
         ))
       ) : (
         <span className="week-empty">Libero</span>
