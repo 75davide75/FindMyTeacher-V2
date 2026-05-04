@@ -42,7 +42,7 @@ function App() {
 
     const normalizedSchedule = normalizeScheduleTimes(nextSchedule)
     setSchedule(normalizedSchedule)
-    setSelectedClass((current) => (normalizedSchedule.classes.includes(current) ? current : (normalizedSchedule.classes[0] ?? '')))
+    setSelectedClass((current) => resolveDefaultClass(normalizedSchedule.classes, current))
     setTeacherQuery((current) => resolveTeacher(normalizedSchedule.teachers, current) ?? '')
   }
 
@@ -802,6 +802,20 @@ function resolveTeacher(teachers: string[], query: string): string | undefined {
     teachers.find((teacher) => teacher.toLowerCase().startsWith(normalizedQuery)) ??
     teachers.find((teacher) => teacher.toLowerCase().includes(normalizedQuery))
   )
+}
+
+function resolveDefaultClass(classes: string[], current: string): string {
+  if (classes.includes(current)) return current
+
+  return classes.find((className) => normalizeClassKey(className) === '5GSA') ?? classes[0] ?? ''
+}
+
+function normalizeClassKey(className: string): string {
+  return className
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
 }
 
 function dayFromDate(date: Date): DayId | null {
