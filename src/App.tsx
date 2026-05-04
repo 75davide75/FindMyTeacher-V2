@@ -186,6 +186,21 @@ function App() {
     setSelectedClass(lesson.className)
   }
 
+  function openCounterpartDay(lesson: Lesson) {
+    setViewMode('day')
+    setTeacherMenuOpen(false)
+    setManualDay(lesson.day)
+
+    if (targetMode === 'class') {
+      setTargetMode('teacher')
+      setTeacherQuery(lesson.teacher)
+      return
+    }
+
+    setTargetMode('class')
+    setSelectedClass(lesson.className)
+  }
+
   function acceptFirstTeacherResult() {
     if (!teacherQuery.trim()) return
 
@@ -523,6 +538,7 @@ function App() {
                               key={lesson.id}
                               lesson={lesson}
                               targetMode={targetMode}
+                              onOpenCounterpart={openCounterpartDay}
                               onSelectBoundary={jumpFromLessonBoundary}
                             />
                           ))
@@ -656,15 +672,27 @@ function NextCard({
 function LessonLine({
   lesson,
   targetMode,
+  onOpenCounterpart,
   onSelectBoundary,
 }: {
   lesson: Lesson
   targetMode: 'class' | 'teacher'
+  onOpenCounterpart: (lesson: Lesson) => void
   onSelectBoundary: (lesson: Lesson, boundary: 'start' | 'end') => void
 }) {
+  const label = targetMode === 'class' ? lesson.teacher : lesson.className
+
   return (
     <div className="lesson-line">
-      <strong>{targetMode === 'class' ? lesson.teacher : lesson.className}</strong>
+      <button
+        className="lesson-counterpart"
+        type="button"
+        onClick={() => onOpenCounterpart(lesson)}
+        title={targetMode === 'class' ? `Apri giorno di ${lesson.teacher}` : `Apri giorno della classe ${lesson.className}`}
+        aria-label={targetMode === 'class' ? `Apri giorno di ${lesson.teacher}` : `Apri giorno della classe ${lesson.className}`}
+      >
+        {label}
+      </button>
       <LessonMeta lesson={lesson} targetMode={targetMode} onSelectBoundary={onSelectBoundary} />
     </div>
   )
