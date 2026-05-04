@@ -166,7 +166,9 @@ p {
 }
 
 .icon-button:focus-visible,
+.status-trigger:focus-visible,
 .segmented button:focus-visible,
+.easter-back:focus-visible,
 .week-jump:focus-visible,
 .lesson-counterpart:focus-visible,
 .lesson-time-button:focus-visible,
@@ -225,7 +227,7 @@ input:focus-visible {
   margin-top: 16px;
 }
 
-.status-strip div {
+.status-tile {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -242,7 +244,11 @@ input:focus-visible {
     transform 180ms ease;
 }
 
-.status-strip div:hover {
+.status-trigger {
+  text-align: left;
+}
+
+.status-tile:hover {
   border-color: rgba(25, 135, 84, 0.24);
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(29, 35, 46, 0.08);
@@ -259,6 +265,71 @@ input:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.easter-shell {
+  display: grid;
+  place-items: center;
+  align-content: center;
+}
+
+.easter-card {
+  display: grid;
+  width: min(720px, 100%);
+  min-height: min(560px, calc(100vh - 88px));
+  grid-template-rows: auto 1fr;
+  gap: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px);
+}
+
+.easter-back {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid rgba(31, 122, 224, 0.24);
+  border-radius: 999px;
+  color: var(--blue);
+  background: rgba(31, 122, 224, 0.1);
+}
+
+.easter-back:hover {
+  color: #ffffff;
+  background: var(--blue);
+  box-shadow:
+    0 0 0 5px rgba(31, 122, 224, 0.12),
+    0 14px 30px rgba(31, 122, 224, 0.24);
+  transform: translateX(-2px) scale(1.03);
+}
+
+.easter-back:active {
+  transform: translateX(0) scale(0.97);
+}
+
+.easter-message {
+  display: grid;
+  align-content: center;
+  gap: 28px;
+  padding: 28px;
+  text-align: center;
+}
+
+.easter-message p {
+  color: var(--ink);
+  font-size: clamp(1.6rem, 4vw, 3.2rem);
+  font-weight: 820;
+  line-height: 1.08;
+}
+
+.easter-message span {
+  color: var(--coral);
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .control-panel,

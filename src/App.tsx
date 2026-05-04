@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowRight,
   CalendarDays,
   CheckCircle2,
@@ -33,6 +34,8 @@ function App() {
   const [manualTime, setManualTime] = useState('08:10')
   const [targetHoverIndex, setTargetHoverIndex] = useState<number | null>(null)
   const [viewHoverIndex, setViewHoverIndex] = useState<number | null>(null)
+  const [lessonCounterClicks, setLessonCounterClicks] = useState(0)
+  const [showEasterEgg, setShowEasterEgg] = useState(false)
 
   function applySchedule(nextSchedule: ScheduleData | null) {
     if (!nextSchedule) {
@@ -211,6 +214,18 @@ function App() {
     setTeacherMenuOpen(false)
   }
 
+  function handleLessonCounterClick() {
+    const nextCount = lessonCounterClicks + 1
+
+    if (nextCount >= 10) {
+      setLessonCounterClicks(0)
+      setShowEasterEgg(true)
+      return
+    }
+
+    setLessonCounterClicks(nextCount)
+  }
+
   async function handleFile(file: File | undefined) {
     if (!file) return
 
@@ -261,6 +276,31 @@ function App() {
     )
   }
 
+  if (showEasterEgg) {
+    return (
+      <main className="app-shell easter-shell">
+        <section className="easter-card" aria-label="Easter egg">
+          <button
+            className="easter-back"
+            type="button"
+            onClick={() => {
+              setLessonCounterClicks(0)
+              setShowEasterEgg(false)
+            }}
+            aria-label="Torna all'orario"
+            title="Torna all'orario"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <div className="easter-message">
+            <p>ao ma la smetti di cliccare? hai capito che questo tasto non funziona. Comunque troppe lezioni pure noi ci siamo stancati.</p>
+            <span>developed by davide 😗</span>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="app-shell">
       <input
@@ -304,19 +344,24 @@ function App() {
       ) : (
         <>
           <section className="status-strip">
-            <div>
+            <button
+              className="status-tile status-trigger"
+              type="button"
+              onClick={handleLessonCounterClick}
+              aria-label={`${schedule.lessons.length} lezioni`}
+            >
               <Database size={18} />
               <span>{schedule.lessons.length} lezioni</span>
-            </div>
-            <div>
+            </button>
+            <div className="status-tile">
               <GraduationCap size={18} />
               <span>{schedule.classes.length} classi</span>
             </div>
-            <div>
+            <div className="status-tile">
               <UserRound size={18} />
               <span>{schedule.teachers.length} docenti</span>
             </div>
-            <div>
+            <div className="status-tile">
               <CheckCircle2 size={18} />
               <span>{schedule.sourceName}</span>
             </div>
